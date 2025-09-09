@@ -8,7 +8,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 
-from .utils import id_from_url
+from .utils import id_from_url, Browser
 
 class Coach:
     '''
@@ -97,44 +97,38 @@ class Coach:
         '''
         Scrapes the coaches profile if an update is required
         '''
-        ## scrape pfr caoching page ##
+        ## scrape pfr coaching page ##
         time.sleep(5 + random.random() * 5)
-        resp = None
         try:
-            resp = requests.get(
+            ## use singleton browser instance ##
+            browser = Browser()
+            page_html = browser.get_page_html(
                 'https://www.pro-football-reference.com/coaches/{0}.htm'.format(
                     self.id
-                ),
-                timeout=5
+                )
             )
         except Exception as e:
             raise Exception('PFR COACH SCRAPE ERROR: Could not scrape {0}: {1}'.format(
                 self.id, e
             ))
-        ## handle response ##
-        if resp.status_code == 200:
-            ## struc ##
-            img_url = numpy.nan
-            hired_by_array = []
-            hired_array = []
-            ## parse ##
-            soup = BeautifulSoup(resp.content, "html.parser")
-            ## find image cells ##
-            image_block = soup.findAll('div', {'id' : 'meta'})
-            if len(image_block) > 0:
-                img = image_block[0].findAll('img')
-                if len(img) > 0:
-                    img_url = img[0]['src']
-            else:
-                pass
-            ## find coaching tree ##
-            ## worked for ##
-            hired_by_array = self.employment_table_helper(soup, 'worked_for')
-            hired_array = self.employment_table_helper(soup, 'employed')
+        ## struc ##
+        img_url = numpy.nan
+        hired_by_array = []
+        hired_array = []
+        ## parse ##
+        soup = BeautifulSoup(page_html, "html.parser")
+        ## find image cells ##
+        image_block = soup.findAll('div', {'id' : 'meta'})
+        if len(image_block) > 0:
+            img = image_block[0].findAll('img')
+            if len(img) > 0:
+                img_url = img[0]['src']
         else:
-            raise Exception('PFR COACH SCRAPE ERROR: {0} - {1}'.format(
-                resp.status_code, resp.content
-            ))
+            pass
+        ## find coaching tree ##
+        ## worked for ##
+        hired_by_array = self.employment_table_helper(soup, 'worked_for')
+        hired_array = self.employment_table_helper(soup, 'employed')
         ## return results ##
         return (
             img_url,

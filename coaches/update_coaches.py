@@ -5,6 +5,7 @@ import json
 
 from .Coach import Coach
 from .CoachTable import CoachTable
+from .utils import Browser
 
 fp = pathlib.Path(__file__).parent.resolve()
 
@@ -28,6 +29,8 @@ def update_coach_meta():
             print('     Coach instance could not be created')
             print('          {0}'.format(e))
             records.append(record)
+    ## cleanup browser when done ##
+    Browser().stop()
     ## combine ##
     df = pd.DataFrame(records)
     ## apply hs overrides ##

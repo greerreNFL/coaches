@@ -5,7 +5,7 @@ import pathlib
 import requests
 from bs4 import BeautifulSoup
 
-from .utils import id_from_url
+from .utils import id_from_url, Browser
 
 class CoachTable:
     '''
@@ -37,36 +37,31 @@ class CoachTable:
         '''
         Scrapes the PFR coaching table for a list of all ids
         '''
-        ## make request ##
-        resp = requests.get('https://www.pro-football-reference.com/coaches/')
-        ## handle response ##
-        if resp.status_code == 200:
-            ## if received, parse with bs ##
-            soup = BeautifulSoup(resp.content, "html.parser")
-            ## find coach cells ##
-            coach_tds = soup.findAll('td', {'data-stat' : 'coach'})
-            if len(coach_tds) > 0:
-                ## if coaches found, scrape each
-                ## scrape each coach ##
-                for coach in coach_tds:
-                    anchor = coach.findAll('a', href=True)
-                    if len(anchor) > 0:
-                        row = {}
-                        row['pfr_coach_id'] = id_from_url(
-                            anchor[0]['href']
-                        )
-                        row['pfr_coach_name'] = anchor[0].text
-                        self.scraped_records.append(row)
-                    else:
-                        ## throw error if scrape failed ##
-                        raise Exception('PFR SCRAPE ERROR: Scraped the coaches page, but parser did not find coach anchor IDs')
-            else:
-                ## throw error if scrape failed ##
-                raise Exception('PFR SCRAPE ERROR: Scraped the coaches page, but parser did not find coaches')
+        ## use selenium browser to get HTML ##
+        browser = Browser()
+        page_html = browser.get_page_html('https://www.pro-football-reference.com/coaches/')
+        ## parse with bs ##
+        soup = BeautifulSoup(page_html, "html.parser")
+        ## find coach cells ##
+        coach_tds = soup.findAll('td', {'data-stat' : 'coach'})
+        if len(coach_tds) > 0:
+            ## if coaches found, scrape each
+            ## scrape each coach ##
+            for coach in coach_tds:
+                anchor = coach.findAll('a', href=True)
+                if len(anchor) > 0:
+                    row = {}
+                    row['pfr_coach_id'] = id_from_url(
+                        anchor[0]['href']
+                    )
+                    row['pfr_coach_name'] = anchor[0].text
+                    self.scraped_records.append(row)
+                else:
+                    ## throw error if scrape failed ##
+                    raise Exception('PFR SCRAPE ERROR: Scraped the coaches page, but parser did not find coach anchor IDs')
         else:
-            raise Exception('PFR SCRAPE ERROR: Coaches page failed. {0} - {1}'.format(
-                resp.status_code, resp.content
-            ))
+            ## throw error if scrape failed ##
+            raise Exception('PFR SCRAPE ERROR: Scraped the coaches page, but parser did not find coaches')
     
     def merge(self):
         '''
