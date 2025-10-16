@@ -162,7 +162,9 @@ class StatCompiler:
         df['away_is_home'] = 0
         df['last_week'] = df.groupby(['season'])['week'].transform('max')
         df['superbowl'] = numpy.where(
-            df['week'] == df['last_week'],
+            (df['week'] == df['last_week']) & ## last observed week of the season
+            (df['game_type'] != 'REG') & ## is in the playoffs
+            (df.groupby(['season','week'])['result'].transform('count') == 1), ## only one game that week
             1,
             0
         )
